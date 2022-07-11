@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<body>
+  
+<h1>Yt Downloader</h1>
+  
+  
+<form action="" method="post">
+  {% csrf_token %}
+  
+  <label for="link">Enter URL:</label>
+  <input type="text" id="link" name="yt_link"><br><br>
+  <input type="submit" value="Submit">
+</form>
+   <ul>
+    {% for clip  in file %}
+        <li> </li>
+        {% endfor %}
+   </ul>
+
+</body>
+</html>

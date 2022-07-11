@@ -1,0 +1,9 @@
+*.pyc
+*.sqlite3
+media
+**logs**
+**__pycache__**
+00*_*.py
+.env
+**.idea**
+.vscode
