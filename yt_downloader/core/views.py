@@ -1,25 +1,43 @@
-from pprint import pprint
-from django.shortcuts import redirect, render
-from django.views import View
 from pytube import YouTube
-from core.forms import Downloadform
+from rest_framework.response import Response
+from core.serializers import (
+    AudioSerializer,
+    StreamSerializer,
+    UrlSerializer,
+    YtSerializer,
+)
+from rest_framework.generics import GenericAPIView
+from rest_framework import status
 
 
-class DownloadView(View):
-    template_name = "core/index.html"
-
-    def get(self, request, *args, **kwargs):
-        form = Downloadform()
-        return render(request, self.template_name, {"form": form})
+class DownloadView(GenericAPIView):
+    serializer_class = UrlSerializer
+    queryset = []
 
     def post(self, request, *args, **kwargs):
-        form = Downloadform(data=request.POST)
-        if form.is_valid():
-            url = form.cleaned_data.get("yt_link")
-            print(url)
-            yt = YouTube(url).streams.filter().order_by("resolution")
-            pprint(yt)
-            return render(request, self.template_name, {'file':yt})
+        serializer = UrlSerializer(data=request.POST)
+        serializer.is_valid(raise_exception=True)
+        url = serializer.validated_data.get("url")
+        yt = YouTube(url)
 
-        else:
-            return render(request, self.template_name, {"form": form})
+        yt_file = YtSerializer(
+            instance={
+                "title": yt.title,
+                "thumbnail_url": yt.thumbnail_url,
+                "channel_id": yt.channel_id,
+                "channel_url": yt.channel_url,
+                "length": yt.length,
+            }
+        )
+        stream_list = []
+        for stream in yt.streams.filter(only_audio=True):
+            instance = {
+                "yt": yt_file.data,
+                "default_filename": stream.default_filename,
+                "filesize": stream.filesize,
+                "extension": stream.mime_type,
+                "resolution": stream.abr,
+            }
+            stream_list.append(instance)
+        stream_serializer = StreamSerializer(stream_list, many=True)
+        return Response(stream_serializer.data, status=status.HTTP_200_OK)
